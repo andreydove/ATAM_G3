@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Lesson3_2 {
-    public static void printArray(List<String> list) {
+    public void printArray(List<String> list) {
         for (int i = 0; i < list.size(); i++) {
             System.out.println(list.get(i));
         }
     }
 
-    public static void printArrayUsingStream(List<String> list) {
+    public void printArrayUsingStream(List<String> list) {
         try {
             (list.stream().map(item -> item.split("")).collect(Collectors.toList()))
                     .stream().forEach(el -> Arrays.stream(el).forEach(System.out::print));

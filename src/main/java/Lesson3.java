@@ -3,9 +3,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lesson3 {
-    public static String[] arr = new String[]{"Kyiv","New York","London","Berlin","Paris","Madrid","Rome"};
+    public String[] arr = new String[]{"Kyiv","New York","London","Berlin","Paris","Madrid","Rome"};
 
-    public static List<String> returnList(String[] array){
+    public List<String> returnList(String[] array){
         int i = 0;
         List<String> list = new ArrayList<String>();
         while(i!=6){
