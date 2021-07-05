@@ -1,23 +1,30 @@
-package Wallet;
+package Entities;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class CashHolder {
-
-    private final static Logger LOG = LogManager.getLogger("Робот-бухгалтер");
+public class CashHolder extends BaseEntity {
 
     private final Map<String, List<Currency>> cash = new HashMap<>();
 
     private List<CreditCard> cardsList = new ArrayList<>();
 
-    public List<Currency> getCashInCurrency(String currency) {
+    public CashHolder(String loggerName) {
+        super(loggerName);
+        log.debug("{} создан", loggerName);
+    }
+
+    public List<Currency> getAllMoney(){
+        List<Currency> result = new ArrayList<>();
+        this.cash.forEach((key, value) -> result.addAll(value));
+        return result;
+    }
+
+    public List<String> showCurrencies(){
+        return new ArrayList<>(this.cash.keySet());
+    }
+
+    public List<Currency> getCashInCurrency(String currency){
         return this.cash.get(currency) != null
                 ? this.cash.get(currency) : new ArrayList<>();
     }
@@ -52,14 +59,15 @@ public class CashHolder {
         if (doubleSum != 0.0){
             range.add(doubleSum);
         }
-
+        String name = currency.toString();//??????
         List<Currency> temp = new ArrayList<>();
         for(Double nominal: range){
             Currency tempCurrency = currency.clone();
             tempCurrency.setNominal(nominal);
             temp.add(tempCurrency);
         }
-        this.cash.put(currency.getName().toString(), temp);
+        this.cash.put(name, temp);
+        log.info("Валюта {} в количестве {} теперь доступна в кошельке", currency.getName(), sum);
         return this;
     }
 
@@ -71,43 +79,62 @@ public class CashHolder {
                 currentSumOfCurrencyInCashHolder += currency.getNominal();
             }
             if(currentSumOfCurrencyInCashHolder < sumOfMoney){
-                LOG.info("Доступная сумма {} меньше запрашиваемой суммы {}. " +
-                        "Будут возвращены все доступные средства", currentSumOfCurrencyInCashHolder, sumOfMoney);
+                log.info("Доступная сумма {} валюты {} меньше запрашиваемой суммы {}. " +
+                                "Будут возвращены все доступные средства",
+                        currentSumOfCurrencyInCashHolder, currencyName, sumOfMoney);
                 return result;
             } else {
+                int intSum = (int) sumOfMoney;
+                double doubleSum = sumOfMoney % 1.00;
+                List<Double> range = new ArrayList<>();
+                for(int i = 0; i< intSum; i++){
+                    range.add(1.00);
+                }
+                if (doubleSum != 0.0){
+                    range.add(doubleSum);
+                }
                 List<Currency> returnedCurrency = new ArrayList<>();
                 double returnedSum = 0;
-                for (Currency currency : result){
+                for(int i = 0; i < range.size(); i++){
                     if(returnedSum < sumOfMoney){
-                        returnedCurrency.add(currency);
-                        returnedSum+=currency.getNominal();
+                        Currency currency = result.get(i);
+                        Currency tempCurrency = currency.clone();
+                        tempCurrency.setNominal(range.get(i));
+                        returnedCurrency.add(tempCurrency);
+                        if(range.get(i) != 1){
+                            currency.setNominal(currency.getNominal() - range.get(i));
+                        } else {
+                            result.remove(currency);
+                        }
+                        returnedSum+=range.get(i);
                     } else {
                         break;
                     }
                 }
-                result.removeAll(returnedCurrency);
                 double balance = 0;
-                for (Currency rest : result) {
-                    balance += rest.getNominal();
+                for (Currency rest: result) {
+                    balance+=rest.getNominal();
                 }
-                LOG.info("Запрашиваемая сумма возвращена. Баланс: {}", balance);
+                log.info("Запрашиваемая сумма {} валюты {} возвращена. Баланс: {}",
+                        sumOfMoney, currencyName, balance);
                 return returnedCurrency;
             }
 
         } else {
+            log.info("Запрашивемой валюты {} в кошельке нет. Будет возвращено 0.0 валюты", currencyName);
             return new ArrayList<>();
         }
     }
 
     public CashHolder putCardToCashHolder(CreditCard card) {
         if (this.cardsList.size() == 5) {
-            LOG.info("Превышен лимит количества карт. Максимум 5 карт");
+            log.info("Превышен лимит количества карт. Максимум 5 карт");
             return this;
         }
         if (card.getCurrency() != null && card.getName() != null) {
             this.cardsList.add(card);
         } else {
-            LOG.info("Не указано имя или валюта карты. Имя: ({}), Валюта:({})",
+            log.info("Не указано имя или валюта карты. Имя: ({}), Валюта:({})",
                     card.getName(), card.getCurrency().getName());
             return this;
         }
@@ -115,7 +142,7 @@ public class CashHolder {
     }
 
     @Override
-    public String toString() {
+    public String toString(){
         StringBuilder builder = new StringBuilder();
         builder.append("{ \n\"Количество денег в кошельке\": \n");
         this.cash.forEach((k, v) -> builder.append("\"")

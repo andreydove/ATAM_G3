@@ -1,23 +1,21 @@
-package Wallet;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package Entities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CreditCard {
-
-    private final static Logger LOG = LogManager.getLogger("Робот-бухгалтер");
-
+public class CreditCard extends BaseEntity {
     private final Map<String, Currency> money = new HashMap<>();
     private String name;
     private Currency currency;
     private Boolean limitIsActive = false;
     private Double limitSize = 0.0;
     private List<Currency> limitCurr = new ArrayList<>();
+    public CreditCard(String loggerName) {
+        super(loggerName);
+        log.debug("{} создан", loggerName);
+    }
 
     public Boolean getLimitIsActive() {
         return limitIsActive;
@@ -50,11 +48,10 @@ public class CreditCard {
 
     public CreditCard putMoneyToCard(Currency currency, Double sum) {
         if (!currency.getName().equals(this.currency.getName())) {
-            LOG.info("Вносимая валюта ({}) и валюта карты ({}) не совпадают. " +
+            log.info("Вносимая валюта ({}) и валюта карты ({}) не совпадают. " +
                     "Карта не пополнена", currency.getName(), this.currency.getName());
             return this;
         }
-
 
         Currency tempCurrency = currency.clone();
         tempCurrency.setNominal(sum);
@@ -95,7 +92,7 @@ public class CreditCard {
             currentSumOfCurrencyInCard += res.size();
             if ((currentSumOfCurrencyInCard < sumOfMoney && !limitIsActive) || limitIsActive) {
                 if (!limitIsActive || (limitIsActive && ((currentSumOfCurrencyInCard + this.limitSize) < sumOfMoney))) {
-                    LOG.info("Недостаточно средств для снятия. Доступная сумма {} меньше запрашиваемой суммы {}.",
+                    log.info("Недостаточно средств для снятия. Доступная сумма {} меньше запрашиваемой суммы {}.",
                             (currentSumOfCurrencyInCard + this.limitSize), sumOfMoney);
                     return res;
                 } else {
@@ -128,7 +125,7 @@ public class CreditCard {
                         balance += rest.getNominal();
                     }
                     this.money.get(currencyName.toString()).setNominal(res.size());
-                    LOG.info("Запрашиваемая сумма превышает доступную на карте. Выданы кредитные средства. Выдано кредитных средств: {}. Кредитный лимит: {}",
+                    log.info("Запрашиваемая сумма превышает доступную на карте. Выданы кредитные средства. Выдано кредитных средств: {}. Кредитный лимит: {}",
                             startLimitSize - balance, limitCurr.size());
                     return res;
                 }
@@ -149,12 +146,20 @@ public class CreditCard {
                     balance += rest.getNominal();
                 }
                 this.money.get(currencyName.toString()).setNominal(res.size());
-                LOG.info("Запрашиваемая сумма снята. Баланс: {}", balance);
+                log.info("Запрашиваемая сумма снята. Баланс: {}", balance);
                 return res;
             }
         } else {
             return new ArrayList<>();
         }
+    }
+
+    public List<Currency> getAllMoney() {
+        List<Currency> result = new ArrayList<>();
+        for (int i = 0; i < this.money.get(CurrencyName.USD.toString()).getNominal(); i++) {
+            result.add(new Currency(this.currency.getName()).setNominal(1.00));
+        }
+        return result;
     }
 
     @Override

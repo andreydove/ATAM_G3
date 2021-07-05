@@ -1,4 +1,4 @@
-package Wallet;
+package Entities;
 
 public enum CurrencyName {
     EUR("Євро"),
