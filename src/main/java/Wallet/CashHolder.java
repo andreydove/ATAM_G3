@@ -36,7 +36,7 @@ public class CashHolder {
                         List<Currency> temp = money.stream()
                                 .filter(currency -> currency.getName().equals(name))
                                 .collect(Collectors.toList());
-                        this.cash.put(name, temp);
+                        this.cash.put(name.toString(), temp);
                     });
         }
         return this;
@@ -52,14 +52,14 @@ public class CashHolder {
         if (doubleSum != 0.0){
             range.add(doubleSum);
         }
-        String name = currency.getName();
+
         List<Currency> temp = new ArrayList<>();
         for(Double nominal: range){
             Currency tempCurrency = currency.clone();
             tempCurrency.setNominal(nominal);
             temp.add(tempCurrency);
         }
-        this.cash.put(name, temp);
+        this.cash.put(currency.getName().toString(), temp);
         return this;
     }
 

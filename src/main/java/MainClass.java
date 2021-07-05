@@ -12,26 +12,16 @@ public class MainClass {
     public static void main(String[] args) {
         CashHolder holder = new CashHolder();
         CreditCard card = new CreditCard();
-        card.setCurrency(new Currency(CurrencyName.UAH.getName()));
+        card.setCurrency(new Currency(CurrencyName.UAH));
         card.setName("Основна гривнева");
-        card.putMoneyToCard(new Currency(CurrencyName.UAH.getName()), 200.0);
-        card.enableCreditLimit(false);
+        card.putMoneyToCard(new Currency(CurrencyName.UAH), 3.00);
+        card.enableCreditLimit(true);
         holder.putCardToCashHolder(card);
         LOG.info(card
                 .getMoneyFromCard(
-                        CurrencyName.UAH.getName(),
-                        30.00)
-                .getNominal()
-        );
-
-         /*CashHolder cash = new CashHolder();
-        cash.putCashToCashHolder(new Currency(CurrencyName.UAH.getName()), 200.0);
-        LOG.info(cash
-                        .getMoneyFromCashHolder(
-                                "Гривня",
-                                30.0)
+                        CurrencyName.UAH,
+                        10.0)
                 .size()
-        );*/
+        );
     }
-
 }

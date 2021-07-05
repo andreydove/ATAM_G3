@@ -3,7 +3,9 @@ package Wallet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CreditCard {
@@ -15,6 +17,7 @@ public class CreditCard {
     private Currency currency;
     private Boolean limitIsActive = false;
     private Double limitSize = 0.0;
+    private List<Currency> limitCurr = new ArrayList<>();
 
     public Boolean getLimitIsActive() {
         return limitIsActive;
@@ -52,57 +55,105 @@ public class CreditCard {
             return this;
         }
 
-        String name = currency.getName();
+
         Currency tempCurrency = currency.clone();
         tempCurrency.setNominal(sum);
 
-        this.money.put(name, tempCurrency);
+        this.money.put(currency.getName().toString(), tempCurrency);
         return this;
     }
 
     public CreditCard enableCreditLimit(Boolean isActive) {
         if (isActive) {
             this.limitIsActive = true;
-            this.limitSize = 1000.0;
+            this.limitSize = 20.0;
+            for (int i = 0; i < this.limitSize; i++) {
+                limitCurr.add(new Currency(currency.getName()).setNominal(1.00));
+            }
         } else {
             this.limitIsActive = false;
             this.limitSize = 0.0;
+            limitCurr.clear();
         }
         return this;
     }
 
-    public Currency getMoneyFromCard(String currencyName, double sumOfMoney) {
-        Currency result = this.money.get(currencyName);
-        if (result != null) {
+
+    public List<Currency> getMoneyFromCard(CurrencyName currencyName, double sumOfMoney) {
+        Currency result = this.money.get(currencyName.toString());
+        List<Currency> res = new ArrayList<>();
+        double startLimitSize = limitCurr.size();
+
+        for (int i = ((result.getNominal() % 1 != 0) ? 1 : 0); i < result.getNominal(); i++) {
+            res.add(new Currency(currencyName).setNominal(1.00));
+        }
+        if (result.getNominal() % 1 != 0) {
+            res.add(new Currency(currencyName).setNominal(result.getNominal() % 1));
+        }
+        if (res != null) {
             double currentSumOfCurrencyInCard = 0;
-            currentSumOfCurrencyInCard += result.getNominal();
-            if (limitIsActive && currentSumOfCurrencyInCard < sumOfMoney) {
-                if ((currentSumOfCurrencyInCard + this.limitSize) < sumOfMoney) {
+            currentSumOfCurrencyInCard += res.size();
+            if ((currentSumOfCurrencyInCard < sumOfMoney && !limitIsActive) || limitIsActive) {
+                if (!limitIsActive || (limitIsActive && ((currentSumOfCurrencyInCard + this.limitSize) < sumOfMoney))) {
                     LOG.info("Недостаточно средств для снятия. Доступная сумма {} меньше запрашиваемой суммы {}.",
                             (currentSumOfCurrencyInCard + this.limitSize), sumOfMoney);
-                    return result;
+                    return res;
                 } else {
-                    Currency returnedCurrency = new Currency();
-                    double returnedLimitSize = this.limitSize;
-                    this.limitSize = result.getNominal() + this.limitSize - sumOfMoney;
-                    returnedLimitSize -= this.limitSize;
-                    returnedCurrency.setNominal(returnedLimitSize);
-                    result.setNominal(this.limitSize);
-                    double balance = result.getNominal();
-                    LOG.info("Запрашиваемая сумма превышает доступную на карте. Выданы кредитные средства. Кредитный баланс: {}", balance);
-                    return returnedCurrency;
+                    List<Currency> returnedCurrency = new ArrayList<>();
+                    double returnedSum = 0;
+                    for (Currency currency : res) {
+                        if (returnedSum < sumOfMoney) {
+                            returnedCurrency.add(currency);
+                            returnedSum += currency.getNominal();
+                            sumOfMoney--;
+                        } else {
+                            break;
+                        }
+                    }
+                    res.removeAll(returnedCurrency);
+                    returnedCurrency.clear();
+                    returnedSum = 0;
+                    for (Currency currency : limitCurr) {
+                        if (returnedSum < sumOfMoney) {
+                            returnedCurrency.add(currency);
+                            returnedSum += currency.getNominal();
+
+                        } else {
+                            break;
+                        }
+                    }
+                    limitCurr.removeAll(returnedCurrency);
+                    double balance = 0;
+                    for (Currency rest : limitCurr) {
+                        balance += rest.getNominal();
+                    }
+                    this.money.get(currencyName.toString()).setNominal(res.size());
+                    LOG.info("Запрашиваемая сумма превышает доступную на карте. Выданы кредитные средства. Выдано кредитных средств: {}. Кредитный лимит: {}",
+                            startLimitSize - balance, limitCurr.size());
+                    return res;
                 }
             } else {
-                Currency returnedCurrency = new Currency();
-                double residueSum = result.getNominal() - sumOfMoney;
-                returnedCurrency.setNominal(sumOfMoney);
-                result.setNominal(residueSum);
-                double balance = result.getNominal();
+                List<Currency> returnedCurrency = new ArrayList<>();
+                double returnedSum = 0;
+                for (Currency currency : res) {
+                    if (returnedSum < sumOfMoney) {
+                        returnedCurrency.add(currency);
+                        returnedSum += currency.getNominal();
+                    } else {
+                        break;
+                    }
+                }
+                res.removeAll(returnedCurrency);
+                double balance = 0;
+                for (Currency rest : res) {
+                    balance += rest.getNominal();
+                }
+                this.money.get(currencyName.toString()).setNominal(res.size());
                 LOG.info("Запрашиваемая сумма снята. Баланс: {}", balance);
-                return returnedCurrency;
+                return res;
             }
         } else {
-            return new Currency();
+            return new ArrayList<>();
         }
     }
 

@@ -5,11 +5,11 @@ public enum CurrencyName {
     USD("Долар"),
     UAH("Гривня");
 
+    private String name;
+
     CurrencyName(String name) {
         this.name = name;
     }
-
-    private String name;
 
     public String getName() {
         return name;

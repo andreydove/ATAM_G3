@@ -2,23 +2,23 @@ package Wallet;
 
 public class Currency {
 
-    private String name;
+    private CurrencyName name;
     private double nominal;
     private int buyCourse;
     private int sellCourse;
 
-    public Currency(String name) {
+    public Currency(CurrencyName name) {
         this.name = name;
     }
 
     public Currency() {
     }
 
-    public String getName() {
+    public CurrencyName getName() {
         return name;
     }
 
-    public Currency setName(String name) {
+    public Currency setName(CurrencyName name) {
         this.name = name;
         return this;
     }
